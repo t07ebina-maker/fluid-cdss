@@ -758,18 +758,18 @@
       }
       if (type === "低張性脱水（Na欠乏型）") {
         return {
-          primary: "生理食塩液（0.9% NaCl）",
-          secondary: "酢酸リンゲル液",
+          primary: "ソルアセトF",
+          secondary: "（当院採用なし：医師へ製剤選択を委ねること）",
           protocol: [
             "SBP < 90 なら CRITICAL として医師へ即報告します。",
-            "循環維持が必要なら生理食塩液 500mL / 30分での初期負荷を検討します。",
+            "循環維持が必要なら初期負荷（500mL / 30分）を検討します。",
             "Na < 125 や神経症状があれば高張食塩水を含め必ず医師へ相談します。"
           ]
         };
       }
       return {
-        primary: "酢酸リンゲル液",
-        secondary: egfr !== null && egfr > 30 ? "ソルデム3A" : "K含有を避けた平衡液",
+        primary: "ソルアセトF",
+        secondary: egfr !== null && egfr > 30 ? "ソルデム3A（eGFR>30の場合のみ）" : "K含有を避けた製剤（医師へ相談）",
         protocol: [
           "急性期は 500-1000mL の初期輸液負荷を検討します。",
           "維持期は 100-150mL/h を参考に尿量と血圧反応を観察します。",
@@ -780,6 +780,7 @@
 
     function getInfusionInfo(primary) {
       if (primary.includes("5%ブドウ糖")) return { label: "5%ブドウ糖液", na: 0, k: 0 };
+      if (primary.includes("ソルアセトF")) return { label: "ソルアセトF", na: 130, k: 4, mg: 2 };
       if (primary.includes("生理食塩液")) return { label: "生理食塩液", na: 154, k: 0 };
       if (primary.includes("酢酸リンゲル")) return { label: "酢酸リンゲル液", na: 130, k: 4 };
       return { label: primary, na: null, k: null };
@@ -959,8 +960,9 @@
       const hasHeartFailureRisk = warnings.some((item) => item.includes("心不全") || item.includes("希釈性低Na")) || (data.edema && data.crackles);
       const fluidPlan = buildFluidPlan(dehydrationType.type, egfr, hasHeartFailureRisk);
       const infusion = getInfusionInfo(fluidPlan.primary);
+      const adrogueInfusion = { label: "5%ブドウ糖液", na: 0, k: 0 };
       const tbw = data.currentWeightKg !== null && tbwCoef !== null ? data.currentWeightKg * tbwCoef : null;
-      const adroguePerLiter = (tbw !== null && data.na !== null && infusion.na !== null && infusion.k !== null) ? ((infusion.na + infusion.k) - data.na) / (tbw + 1) : null;
+      const adroguePerLiter = (tbw !== null && data.na !== null) ? ((adrogueInfusion.na + adrogueInfusion.k) - data.na) / (tbw + 1) : null;
       const naChangeHourly = adroguePerLiter !== null ? Math.abs(adroguePerLiter) / 24 : null;
       const chronicDysnatremia = days !== null ? days >= 2 : true;
       let naSafety = "未判定";
@@ -977,7 +979,7 @@
         derived: {
           days, deltaWeight, tbwCoef, egfr, egfrStage, shockIndex, bunCre, posm, urinePerKgPerHour, dailyUrine,
           weightLoss, dehydrationType, deficitWeight, deficitNa, deficitHct, deficitTp, averageDeficit, divergence,
-          maintenance, fluidPlan, tbw, adroguePerLiter, naChangeHourly, naSafety, infusion
+          maintenance, fluidPlan, tbw, adroguePerLiter, naChangeHourly, naSafety, infusion, adrogueInfusion
         }
       };
     }
@@ -1120,7 +1122,7 @@
           <div class="band-body">
             <table class="calc-table">
               <tr><th>TBW</th><td class="value">${derived.tbw !== null ? `${fmt(derived.tbw, 1)} L` : "―"}</td><td class="note">体重 × TBW係数 ${fmt(derived.tbwCoef, 2)}</td></tr>
-              <tr><th>使用製剤</th><td class="value">${derived.infusion.label}</td><td class="note">Na ${fmt(derived.infusion.na)} / K ${fmt(derived.infusion.k)} mEq/L</td></tr>
+              <tr><th>計算基準製剤</th><td class="value">5%ブドウ糖液（Na 0 / K 0 mEq/L）</td><td class="note">他製剤では実際のNa変化速度が異なります</td></tr>
               <tr><th>1L投与時のNa変化量</th><td class="value">${derived.adroguePerLiter !== null ? `${fmtSigned(derived.adroguePerLiter, 2)} mEq/L` : "―"}</td><td class="note">Adrogue-Madias 式</td></tr>
               <tr><th>1時間あたり</th><td class="value">${derived.naChangeHourly !== null ? `${fmt(derived.naChangeHourly, 2)} mEq/L/h` : "―"}</td><td class="note">${derived.naSafety}</td></tr>
             </table>
