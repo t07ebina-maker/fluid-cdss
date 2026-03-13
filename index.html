@@ -189,6 +189,64 @@
       line-height: 1.7;
       font-weight: 700;
     }
+    .protocol-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .protocol-card {
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #d5e3da;
+      background: #fcfffd;
+    }
+    .protocol-head {
+      padding: 12px 14px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #466a1f, #2f5a18);
+    }
+    .protocol-body { padding: 14px; display: grid; gap: 10px; }
+    .protocol-metric {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #dbe7df;
+      background: #fff;
+    }
+    .protocol-metric.deficit { background: #fff4df; border-color: #ecd6a8; }
+    .protocol-metric.maintenance { background: #eef8ff; border-color: #cfe2ef; }
+    .protocol-metric.total { background: #eef8f1; border-color: #cce0d2; }
+    .protocol-metric.rate { background: #f6f1ff; border-color: #ded2f2; }
+    .protocol-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .protocol-value { font-size: 24px; font-weight: 700; line-height: 1.1; }
+    .protocol-note {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f7faf8;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.65;
+      border: 1px solid #d9e6de;
+    }
+    .protocol-summary {
+      margin-top: 12px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #edf6ef;
+      border: 1px solid #cadecf;
+    }
+    .protocol-stop {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fff1f2;
+      border: 1px solid #efc6ca;
+      color: var(--critical);
+      font-size: 13px;
+      line-height: 1.7;
+      font-weight: 700;
+    }
     .warn-line { margin-top: 10px; color: var(--warning); font-size: 13px; line-height: 1.7; }
     .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
     .metric {
@@ -219,7 +277,7 @@
     @media (max-width: 760px) {
       .wrap { padding: 12px 12px 42px; }
       .hero, .card-body, .card-head { padding-left: 16px; padding-right: 16px; }
-      .section-grid, .fields, .checkbox-grid, .row-split, .metric-grid { grid-template-columns: 1fr; }
+      .section-grid, .fields, .checkbox-grid, .row-split, .metric-grid, .protocol-grid { grid-template-columns: 1fr; }
       .actions { flex-direction: column; }
       button { width: 100%; }
       .calc-table .value { white-space: normal; }
@@ -969,12 +1027,40 @@
                 <tr><th>第2選択</th><td class="value">${derived.fluidPlan.secondary}</td><td class="note">eGFR と K 含有条件を反映</td></tr>
               </table>
               <div class="recommend-box">思考支援: まず「欠乏補正」と「維持輸液」を分け、その後に合計量と投与速度を確認します。</div>
-              <table class="calc-table" style="margin-top:12px;">
-                <tr><th>日程</th><th>欠乏補正</th><th>維持輸液</th><th>合計</th><th>投与速度</th><th>備考</th></tr>
-                ${protocolRows.map((row) => `<tr><td class="value">${row.day}</td><td>${fmt(row.deficit, 0)} mL</td><td>${fmt(row.maintenance, 0)} mL</td><td class="value">${fmt(row.total, 0)} mL</td><td>${fmt(row.rate, 0)} mL/h</td><td class="note">${row.note}</td></tr>`).join("")}
-                <tr><td class="value">3日合計</td><td class="value">${fmt(totalDeficit, 0)} mL</td><td class="value">${fmt(totalMaintenance, 0)} mL</td><td class="value">${fmt(grandTotal, 0)} mL</td><td>―</td><td class="note">再評価で前倒し・減量を許容</td></tr>
-                <tr><td class="value">中止基準</td><td colspan="5" class="note">呼吸困難 / ラ音出現（肺水腫） / 尿量 &lt; 0.5mL/kg/h / Na 低下 &gt; 0.5mEq/L/h</td></tr>
-              </table>
+              <div class="protocol-grid">
+                ${protocolRows.map((row) => `
+                  <article class="protocol-card">
+                    <div class="protocol-head">${row.day}</div>
+                    <div class="protocol-body">
+                      <div class="protocol-metric deficit">
+                        <div class="protocol-label">欠乏補正</div>
+                        <div class="protocol-value">${fmt(row.deficit, 0)} mL</div>
+                      </div>
+                      <div class="protocol-metric maintenance">
+                        <div class="protocol-label">維持輸液</div>
+                        <div class="protocol-value">${fmt(row.maintenance, 0)} mL</div>
+                      </div>
+                      <div class="protocol-metric total">
+                        <div class="protocol-label">合計</div>
+                        <div class="protocol-value">${fmt(row.total, 0)} mL</div>
+                      </div>
+                      <div class="protocol-metric rate">
+                        <div class="protocol-label">投与速度</div>
+                        <div class="protocol-value">${fmt(row.rate, 0)} mL/h</div>
+                      </div>
+                      <div class="protocol-note">${row.note}</div>
+                    </div>
+                  </article>
+                `).join("")}
+              </div>
+              <div class="protocol-summary">
+                <table class="calc-table">
+                  <tr><th>3日合計の欠乏補正</th><td class="value">${fmt(totalDeficit, 0)} mL</td><td class="note"></td></tr>
+                  <tr><th>3日合計の維持輸液</th><td class="value">${fmt(totalMaintenance, 0)} mL</td><td class="note"></td></tr>
+                  <tr><th>3日合計</th><td class="value">${fmt(grandTotal, 0)} mL</td><td class="note">再評価で前倒し・減量を許容</td></tr>
+                </table>
+              </div>
+              <div class="protocol-stop">中止基準: 呼吸困難 / ラ音出現（肺水腫） / 尿量 &lt; 0.5mL/kg/h / Na 低下 &gt; 0.5mEq/L/h</div>
               <div class="recommend-box" style="margin-top:14px;">${derived.fluidPlan.protocol.join(" ")}</div>
             </div>
           </section>
