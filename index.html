@@ -271,6 +271,48 @@
     .pill.info { color: var(--info); background: var(--info-bg); }
     .pill.none { color: var(--ok); background: var(--ok-bg); }
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
+    .case-table-wrap { overflow-x: visible; }
+    .case-cards { display: none; gap: 12px; }
+    .case-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      box-shadow: 0 6px 18px rgba(18, 53, 58, 0.06);
+    }
+    .case-card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .case-card-title {
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .case-card-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .case-meta {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f7faf8;
+      border: 1px solid #dbe7df;
+    }
+    .case-meta .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .case-meta .value {
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .case-card .secondary { width: 100%; }
     .footer-note { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.7; }
     .hidden { display: none !important; }
     @media (max-width: 1120px) { .layout { grid-template-columns: 1fr; } }
@@ -281,6 +323,9 @@
       .actions { flex-direction: column; }
       button { width: 100%; }
       .calc-table .value { white-space: normal; }
+      .case-table-wrap { display: none; }
+      .case-cards { display: grid; }
+      .case-card-meta { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -423,7 +468,7 @@
       </div>
       <div class="card-body">
         <div id="caseSummary" class="metric-grid"></div>
-        <div class="table-wrap">
+        <div class="table-wrap case-table-wrap">
           <table class="case-table">
             <thead>
               <tr><th>ID</th><th>カテゴリ</th><th>症例概要</th><th>判定</th><th>Alert</th><th>Posm</th><th>eGFR</th><th></th></tr>
@@ -431,6 +476,7 @@
             <tbody id="caseTableBody"></tbody>
           </table>
         </div>
+        <div id="caseCardList" class="case-cards"></div>
         <p class="footer-note">仮想症例は教育・検証用です。実患者データではありません。評価はこのツール自身のロジックで採点しています。</p>
       </div>
     </section>
@@ -461,6 +507,7 @@
     const elements = {
       resultArea: document.getElementById("resultArea"),
       caseTableBody: document.getElementById("caseTableBody"),
+      caseCardList: document.getElementById("caseCardList"),
       caseSummary: document.getElementById("caseSummary")
     };
 
@@ -1146,11 +1193,47 @@
     }
 
     function renderCaseTable() {
-      elements.caseTableBody.innerHTML = virtualCases.map((item, index) => {
+      const rows = virtualCases.map((item, index) => {
         const result = evaluateCase(item);
         const pillClass = result.overallLevel === "CRITICAL" ? "critical" : result.overallLevel === "WARNING" ? "warning" : result.overallLevel === "INFO" ? "info" : "none";
         return `<tr><td>${item.patientName.split(" ")[0]}</td><td>${item.category}</td><td>${item.note}<div class="subtle">${item.patientName}</div></td><td>${result.derived.dehydrationType.type}</td><td><span class="pill ${pillClass}">${result.overallLevel}</span></td><td>${fmt(result.derived.posm, 1)}</td><td>${fmt(result.derived.egfr, 1)}<div class="subtle">${result.derived.egfrStage}</div></td><td><button class="secondary" type="button" data-case-index="${index}">読込</button></td></tr>`;
       }).join("");
+      const cards = virtualCases.map((item, index) => {
+        const result = evaluateCase(item);
+        const pillClass = result.overallLevel === "CRITICAL" ? "critical" : result.overallLevel === "WARNING" ? "warning" : result.overallLevel === "INFO" ? "info" : "none";
+        return `
+          <article class="case-card">
+            <div class="case-card-head">
+              <div>
+                <div class="case-card-title">${item.patientName.split(" ")[0]} ${item.category}</div>
+                <div class="subtle">${item.note}</div>
+              </div>
+              <span class="pill ${pillClass}">${result.overallLevel}</span>
+            </div>
+            <div class="case-card-meta">
+              <div class="case-meta">
+                <div class="label">判定</div>
+                <div class="value">${result.derived.dehydrationType.type}</div>
+              </div>
+              <div class="case-meta">
+                <div class="label">Posm</div>
+                <div class="value">${fmt(result.derived.posm, 1)}</div>
+              </div>
+              <div class="case-meta">
+                <div class="label">eGFR</div>
+                <div class="value">${fmt(result.derived.egfr, 1)}</div>
+              </div>
+              <div class="case-meta">
+                <div class="label">CKD</div>
+                <div class="value">${result.derived.egfrStage}</div>
+              </div>
+            </div>
+            <button class="secondary" type="button" data-case-index="${index}">この症例を読込</button>
+          </article>
+        `;
+      }).join("");
+      elements.caseTableBody.innerHTML = rows;
+      elements.caseCardList.innerHTML = cards;
       renderCaseSummary(buildExportRows());
     }
 
@@ -1189,6 +1272,13 @@
     document.getElementById("gcsVerbal").addEventListener("change", syncConditionalFields);
     document.getElementById("gcsMotor").addEventListener("change", syncConditionalFields);
     elements.caseTableBody.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-case-index]");
+      if (!button) return;
+      fillForm(virtualCases[Number(button.dataset.caseIndex)]);
+      runEvaluation();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    elements.caseCardList.addEventListener("click", (event) => {
       const button = event.target.closest("[data-case-index]");
       if (!button) return;
       fillForm(virtualCases[Number(button.dataset.caseIndex)]);
