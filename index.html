@@ -313,15 +313,15 @@
                 <div class="field"><label for="sex">性別</label><select id="sex"><option value="">選択してください</option><option value="男性">男性</option><option value="女性">女性</option><option value="その他">その他</option></select></div>
                 <div class="field"><label for="heightCm">身長（cm）</label><input id="heightCm" type="number" inputmode="decimal"></div>
                 <div class="field"><label for="baselineWeightKg">通常時体重（kg）</label><input id="baselineWeightKg" type="number" step="0.1" inputmode="decimal"></div>
-                <div class="field">
+                <div class="field full">
                   <label for="baselineDate">通常時体重の測定日時</label>
                   <div class="date-stack">
                     <input id="baselineDate" type="date">
                     <select id="baselineTime"></select>
                   </div>
                 </div>
-                <div class="field"><label for="currentWeightKg">現体重（kg）</label><input id="currentWeightKg" type="number" step="0.1" inputmode="decimal"></div>
-                <div class="field">
+                <div class="field full"><label for="currentWeightKg">現体重（kg）</label><input id="currentWeightKg" type="number" step="0.1" inputmode="decimal"></div>
+                <div class="field full">
                   <label for="currentDate">現体重の測定日時</label>
                   <div class="date-stack">
                     <input id="currentDate" type="date">
@@ -878,9 +878,9 @@
       }
 
       if (egfr !== null && egfr >= 15 && egfr < 30) warnings.push(`eGFR ${fmt(egfr, 1)}。投与量を通常の 50-75% に減量し、4-6時間ごとに再評価してください。`);
-      if (data.bnp !== null && data.bnp > 500) warnings.push(`BNP ${fmt(data.bnp)}。重症心不全リスクが高く、輸液量制限が必要です。`);
+      if (data.bnp !== null && data.bnp > 500) warnings.push(`BNP ${fmt(data.bnp)}。重症心不全として扱い、輸液量を通常の 50-75% に制限してください。`);
       else if (data.bnp !== null && data.bnp >= 200) warnings.push(`BNP ${fmt(data.bnp)}。心不全リスクがあり、通常の 50-75% の輸液量から検討してください。`);
-      if (data.edema && data.crackles) warnings.push("浮腫とラ音を認めます。重症心不全や溢水を先に評価してください。");
+      if (data.edema && data.crackles) warnings.push("浮腫 + ラ音を認めます。重症心不全として扱い、輸液量を通常の 50-75% に制限してください。");
       if (data.na !== null && data.na < 135 && (data.edema || (data.bnp !== null && data.bnp > 200))) warnings.push("希釈性低Na血症の可能性があります。水制限を優先し、安易な補液は避けてください。");
       if (data.k !== null && data.k > 5.5 && data.k <= 6.0) warnings.push("中等度高K血症です。K含有輸液は使用できません。");
       if (urinePerKgPerHour !== null && urinePerKgPerHour > 0.5 && urinePerKgPerHour < 1.0) warnings.push(`尿量 ${fmt(urinePerKgPerHour, 2)} mL/kg/h。乏尿域であり鑑別が必要です。`);
